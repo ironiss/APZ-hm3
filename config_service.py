@@ -11,10 +11,6 @@ class AvailableAPI(BaseModel):
     mes_s: str
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
 @app.get("/all_ports")
 def handle() -> AvailableAPI:
     """
