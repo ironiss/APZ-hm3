@@ -16,10 +16,6 @@ class MessageRequestQuery(BaseModel):
 class MessageResponseQuery(BaseModel):
     msgs: str
 
-    
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
 
 @app.post("/fetching_message")
 def fulfill_hash_table(query: MessageRequestQuery) -> Dict[str, str]:
