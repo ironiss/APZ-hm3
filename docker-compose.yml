@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  facade_service:
+    build:
+      context: .
+      dockerfile: Dockerfile.facade
+    command: python3 -m uvicorn facade_service:app --host 0.0.0.0 --port 5001
+    ports:
+      - "5001:5001"
+    depends_on:
+      - logging_service_1
+      - logging_service_2
+      - logging_service_3
+    networks:
+      - app_network
+
+  logging_service_1:
+    build: 
+      context: .
+      dockerfile: Dockerfile.logging
+    command: python3 -m uvicorn logging_service:app --host 0.0.0.0 --port 5002
+    ports:
+      - "5002:5002"
+    networks:
+      - app_network
+
+
+  logging_service_2:
+    build:
+      context: .
+      dockerfile: Dockerfile.logging
+    command: python3 -m uvicorn logging_service:app --host 0.0.0.0 --port 5003
+    ports:
+      - "5003:5003"
+    networks:
+      - app_network
+
+
+  logging_service_3:
+    build:
+      context: .
+      dockerfile: Dockerfile.logging
+    command: python3 -m uvicorn logging_service:app --host 0.0.0.0 --port 5004
+    ports:
+      - "5004:5004"
+    networks:
+      - app_network
+
+
+  message_service:
+    build:
+      context: .
+      dockerfile: Dockerfile.message
+    command: python3 -m uvicorn message_service:app --host 0.0.0.0 --port 5005
+    ports:
+      - "5005:5005"
+    networks:
+      - app_network
+
+  config_service:
+    build:
+      context: .
+      dockerfile: Dockerfile.config.service
+    command: python3 -m uvicorn config_service:app --host 0.0.0.0 --port 5006
+    ports:
+      - "5006:5006"
+    networks:    
+      - app_network
+
+  hazelcast_node_1:
+    image: hazelcast/hazelcast:5.5.0
+    container_name: hazelcast_node_1
+    environment:
+      - HAZELCAST_CLUSTER_NAME=dev
+      - HAZELCAST_MEMBER_LIST=hazelcast_node_2,hazelcast_node_3
+    networks:
+      - app_network
+    depends_on:
+      - logging_service_1
+
+  hazelcast_node_2:
+    image: hazelcast/hazelcast:5.5.0
+    container_name: hazelcast_node_2
+    environment:
+      - HAZELCAST_CLUSTER_NAME=dev
+      - HAZELCAST_MEMBER_LIST=hazelcast_node_1,hazelcast_node_3
+    networks:
+      - app_network
+    depends_on:
+      - logging_service_2
+
+
+  hazelcast_node_3:
+    image: hazelcast/hazelcast:5.5.0
+    container_name: hazelcast_node_3
+    environment:
+      - HAZELCAST_CLUSTER_NAME=dev
+      - HAZELCAST_MEMBER_LIST=hazelcast_node_1,hazelcast_node_2
+    networks:
+      - app_network
+    depends_on:
+      - logging_service_3    
+  
+  hazelcast_management_center:
+    image: hazelcast/management-center:5.5.0
+    container_name: hazelcast_management_center
+    depends_on:
+      - hazelcast_node_1
+      - hazelcast_node_2
+      - hazelcast_node_3
+    environment:
+      - MC_DEFAULT_CLUSTER=dev
+      - MC_DEFAULT_CLUSTER_MEMBERS=hazelcast_node_1:5701,hazelcast_node_2:5701,hazelcast_node_3:5701
+    ports:
+      - "8080:8080"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
